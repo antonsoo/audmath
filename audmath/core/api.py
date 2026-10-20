@@ -639,6 +639,8 @@ def rms(
     x = np.array(x)
     if x.size == 0:
         return np.float64(0.0)
+    if np.issubdtype(x.dtype, np.integer):
+        x = x.astype(np.float64)
     return np.sqrt(np.mean(np.square(x), axis=axis, keepdims=keepdims))
 
 
