@@ -1,3 +1,6 @@
+from decimal import Decimal
+from decimal import localcontext
+
 import numpy as np
 import pytest
 
@@ -93,3 +96,29 @@ def test_window_shape(samples, shape, half, expected):
 def test_window_error(shape, half, error, error_msg):
     with pytest.raises(error, match=error_msg):
         audmath.window(3, shape=shape, half=half)
+
+
+@pytest.mark.parametrize("samples", [710, 711, 2048, 2049])
+@pytest.mark.parametrize("half", [None, "left", "right"])
+def test_exponential_window_large(samples, half):
+    with np.errstate(over="raise", invalid="raise"):
+        win = audmath.window(samples, shape="exponential", half=half)
+    # Evaluate the original definition with a larger exponent range and precision.
+    length = samples if half is not None else samples // 2 + 1
+    with localcontext() as context:
+        context.prec = 60
+        denominator = Decimal(length - 1).exp() - 1
+        expected = np.array(
+            [float((Decimal(i).exp() - 1) / denominator) for i in range(length)]
+        )
+    if half == "right":
+        expected = expected[::-1]
+    elif half is None:
+        if samples % 2:
+            expected = np.concatenate([expected, expected[-2::-1]])
+        else:
+            expected = expected[:-1]
+            expected = np.concatenate([expected, expected[::-1]])
+    np.testing.assert_allclose(win, expected, rtol=2e-14, atol=1e-320)
+    assert np.all(np.isfinite(win))
+    assert np.all((win >= 0) & (win <= 1))

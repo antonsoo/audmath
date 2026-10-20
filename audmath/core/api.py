@@ -870,7 +870,8 @@ def window(
             win = 0.5 * (1 - np.cos(2 * np.pi * x / width))
         elif shape == "exponential":
             x = np.arange(samples)
-            win = (np.exp(x) - 1) / (np.exp(samples - 1) - 1)
+            # Scale both terms by exp(-(samples - 1)) to avoid overflow.
+            win = np.exp(x - (samples - 1)) * np.expm1(-x) / np.expm1(-(samples - 1))
         elif shape == "logarithmic":
             x = np.arange(samples)
             win = np.log10(x + 1) / np.log10(samples)
