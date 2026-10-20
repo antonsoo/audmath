@@ -98,13 +98,27 @@ def test_window_error(shape, half, error, error_msg):
         audmath.window(3, shape=shape, half=half)
 
 
-@pytest.mark.parametrize("samples", [710, 711, 2048, 2049])
+@pytest.mark.parametrize(
+    "samples",
+    [
+        710,
+        711,
+        2048,
+        2049,
+        pytest.param(np.uint8(5), id="uint8-5"),
+        pytest.param(np.uint16(5), id="uint16-5"),
+        pytest.param(np.uint32(5), id="uint32-5"),
+        pytest.param(np.uint64(5), id="uint64-5"),
+        pytest.param(np.uint32(2048), id="uint32-2048"),
+        pytest.param(np.uint64(2048), id="uint64-2048"),
+    ],
+)
 @pytest.mark.parametrize("half", [None, "left", "right"])
 def test_exponential_window_large(samples, half):
     with np.errstate(over="raise", invalid="raise"):
         win = audmath.window(samples, shape="exponential", half=half)
     # Evaluate the original definition with a larger exponent range and precision.
-    length = samples if half is not None else samples // 2 + 1
+    length = int(samples) if half is not None else int(samples) // 2 + 1
     with localcontext() as context:
         context.prec = 60
         denominator = Decimal(length - 1).exp() - 1
